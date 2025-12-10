@@ -74,6 +74,11 @@ func main() {
 	}
 	allowedUserIDs := strings.Split(allowedUserIDsStr, ",")
 
+	unauthorizedMessage := os.Getenv("UNAUTHORIZED_MESSAGE")
+	if unauthorizedMessage == "" {
+		log.Fatal("UNAUTHORIZED_MESSAGE environment variable is required")
+	}
+
 	client := slack.New(
 		botToken,
 		slack.OptionAppLevelToken(appToken),
@@ -148,6 +153,11 @@ func main() {
 					if action.ActionID == "delete_message" {
 						if !slices.Contains(allowedUserIDs, callback.User.ID) {
 							log.Printf("User %s is not allowed to delete", callback.User.ID)
+							client.PostEphemeral(
+								callback.Channel.ID,
+								callback.User.ID,
+								slack.MsgOptionText(unauthorizedMessage, false),
+							)
 							socketClient.Ack(*evt.Request)
 							continue
 						}
